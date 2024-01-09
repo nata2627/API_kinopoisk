@@ -57,11 +57,6 @@ def get_persons(kinopoisk_id):
     return persons
 
 def create_relationship(kinopoisk_id, persons):
-    uri = "bolt://localhost:7687"
-    user = "neo4j"
-    password = "mynewpassword"
-
-    driver = GraphDatabase.driver(uri, auth=(user, password))
     session = driver.session()
 
     for person in persons:
