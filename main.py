@@ -1,7 +1,15 @@
 import requests
 from neo4j import GraphDatabase
 
-def get_movies(url, headers):
+url = "https://kinopoiskapiunofficial.tech/api/v2.2/films?order=RATING&ratingFrom=7&ratingTo=10&type=ALL&yearFrom=2000&yearTo=2010"
+headers = {"X-API-KEY": "fe569b87-2d6c-4203-9b6a-edf8163e8ee9"}
+
+uri = "bolt://localhost:7687"
+username = "neo4j"
+password = "password1"
+driver = GraphDatabase.driver(uri, auth=(username, password))
+
+def get_movies():
     response = requests.get(url, headers)
     all_movies = []
     page = 1
@@ -18,7 +26,6 @@ def get_movies(url, headers):
             break
     return all_movies
 
-movies = get_movies()
 
 def create_movie_node(movie, session):
     head = (
@@ -88,16 +95,7 @@ def create_relationship(kinopoisk_id, persons):
     session.close()
     driver.close()
 
-
-url = "https://kinopoiskapiunofficial.tech/api/v2.2/films?order=RATING&ratingFrom=7&ratingTo=10&type=ALL&yearFrom=2000&yearTo=2010"
-headers = {"X-API-KEY": "fe569b87-2d6c-4203-9b6a-edf8163e8ee9"}
-movies_data = get_movies(url, headers)
-
-uri = "bolt://localhost:7687"
-username = "neo4j"
-password = "ujC__OXk1wZ7CYO_QKzGsVe4XnLkbkPaJXQslxC8O38"
-driver = GraphDatabase.driver(uri, auth=(username, password))
-
+movies = get_movies()
 for movie in movies:
     create_movie_node(movie)
     kinopoisk_id = movie.get("kinopoiskId")
