@@ -26,7 +26,6 @@ def get_movies():
             break
     return all_movies
 
-
 def create_movie_node(movie, session):
     head = (
         "MERGE (m:Movie {Id: $kinopoiskId}) "
@@ -40,10 +39,9 @@ def create_movie_node(movie, session):
     session.run(
         head,
         kinopoiskId=movie.get("kinopoiskId"),
-        nameRu=movie.get("nameRu") if movie.get("nameRu") is not None else movie.get("nameEn"),
-        ratingKinopoisk=movie.get("ratingKinopoisk"),
+        nameRu=movie.get("nameRu"),
+        ratingKinopoisk=movie.get("ratingImdb"),
         year=movie.get("year"),
-        type=movie.get("type"),
         countries=[country.get("country") for country in movie.get("countries")],
         genres=[genre.get("genre") for genre in movie.get("genres")]
     )
