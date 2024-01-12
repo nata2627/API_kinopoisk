@@ -6,18 +6,17 @@ headers = {"X-API-KEY": "fe569b87-2d6c-4203-9b6a-edf8163e8ee9"}
 
 uri = "bolt://localhost:7687"
 username = "neo4j"
-password = "password1"
+password = "mypassword"
 driver = GraphDatabase.driver(uri, auth=(username, password))
 
 def get_movies():
-    response = requests.get(url, headers)
     all_movies = []
     page = 1
     while True:
         page_url = f"{url}&page={page}"
-        response = requests.get(page_url, headers)
+        response = requests.get(page_url, headers=headers)
         if response.status_code == 200:
-            movies_data = response.json().get("films", [])
+            movies_data = response.json().get("items")
             if not movies_data:
                 break
             all_movies.extend(movies_data)
@@ -26,7 +25,8 @@ def get_movies():
             break
     return all_movies
 
-def create_movie_node(movie, session):
+def create_movie_node(movie):
+    session = driver.session()
     head = (
         "MERGE (m:Movie {Id: $kinopoiskId}) "
         "ON CREATE SET "
@@ -40,17 +40,15 @@ def create_movie_node(movie, session):
         head,
         kinopoiskId=movie.get("kinopoiskId"),
         nameRu=movie.get("nameRu"),
-        ratingKinopoisk=movie.get("ratingImdb"),
+        ratingImdb=movie.get("ratingImdb"),
         year=movie.get("year"),
         countries=[country.get("country") for country in movie.get("countries")],
         genres=[genre.get("genre") for genre in movie.get("genres")]
     )
-    session.close()
-    driver.close()
 
 def get_persons(kinopoisk_id):
     url = f"https://kinopoiskapiunofficial.tech/api/v1/staff?filmId={kinopoisk_id}"
-    response = requests.get(url, headers)
+    response = requests.get(url, headers=headers)
     persons = response.json()
     return persons
 
@@ -58,19 +56,19 @@ def create_relationship(kinopoisk_id, persons):
     session = driver.session()
 
     for person in persons:
-        query = (
+        head = (
             "MERGE (p:Person {staffId: $staffId}) "
             "ON CREATE SET "
             "p.nameRu = $nameRu, "
             "p.professionKey = $professionKey"
         )
         session.run(
-            query,
+            head,
             staffId=person.get("staffId"),
             nameRu=person.get("nameRu"),
             professionKey=person.get("professionKey")
         )
-        # Создание связей с фильмом на основе профессии
+
         relationship = {
             "DIRECTOR": "DIRECTED",
             "ACTOR": "ACTED_IN",
@@ -86,7 +84,6 @@ def create_relationship(kinopoisk_id, persons):
             )
             session.run(relation_query, kinopoiskId=kinopoisk_id, staffId=person.get("staffId"))
     session.close()
-    driver.close()
 
 movies = get_movies()
 for movie in movies:
@@ -94,3 +91,5 @@ for movie in movies:
     kinopoisk_id = movie.get("kinopoiskId")
     persons = get_persons(kinopoisk_id)
     create_relationship(kinopoisk_id, persons)
+
+driver.close()
